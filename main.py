@@ -48,12 +48,30 @@ def get_movies_by_category(category: str, year: int):
 
 @app.post('/movies',tags=["Movies"], status_code=status.HTTP_201_CREATED)
 def create_movies(id: int = Body(), title: str= Body(), overview: str= Body(),year: int = Body(), rating: int = Body(), category: str= Body()):
-    movies.append({
-        "id":id,
+    movie = {
+         "id":id,
         "title":title,
         "overview":overview,
         "year":year,
         "rating":rating,
         "category":category
-    })
-    return movies
+    }
+    movies.append(movie)
+    return movie
+
+@app.put('/movies/{id}',tags=["Movies"])
+def update_movie(id: int, title: str= Body(), overview: str= Body(),year: int = Body(), rating: int = Body(), category: str= Body()):
+    for item in movies:
+        if item["id"] == id:
+            item["title"] = title
+            item["overview"] = overview
+            item["year"] = year
+            item["rating"] = rating
+            item["category"] = category
+            return movies
+        
+@app.delete('/movies/{id}',tags=["Movies"], status_code=204 )
+def delete_movie(id: int):
+    for item in movies:
+        if id == item["id"]:
+            movies.remove(item)
