@@ -1,6 +1,7 @@
-from fastapi import FastAPI, Body, status
+from fastapi import FastAPI, Body, status, Path, Query
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
-from typing import Optional
+from typing import Optional, List
 
 app = FastAPI()
 app.title="First app whit FastApi"
@@ -11,7 +12,7 @@ class Movie(BaseModel):
     title: str= Field(min_length=5, max_length=30 )
     overview: str=Field(min_length=5, max_length=200 )
     year: int = Field(le=2030)
-    rating: float = Field(10)
+    rating: float = Field(le=10, ge=1)
     category: str =Field(min_length=3, max_length=20)
     
     model_config={
@@ -45,36 +46,32 @@ movies = [
 	}
 ]
 
-@app.get("/", tags= ["Home"])
-def read_root():
-    return "hello world get" 
+@app.get('/movies',tags=["Movies"], response_model=List[Movie])
+def get_movies() -> List[Movie]:
+    return JSONResponse(content=movies)
 
-@app.get('/movies',tags=["Movies"])
-def get_movies():
-    return movies
-
-@app.get('/movies/{id}',tags=["Movies"])
-def get_movies(id: int):
+@app.get('/movies/{id}',tags=["Movies"], response_model=Movie)
+def get_movies(id: int = Path(ge=1)) -> Movie:
     for item in movies:
         if id == item["id"]:
-            return item
-    return []
+             JSONResponse(content=item)
+    return JSONResponse(status_code=404,content=[])
 
-@app.get('/movies/',tags=["Movies"])
-def get_movies_by_category(category: str, year: int):
+@app.get('/movies/',tags=["Movies"],response_model=List[Movie])
+def get_movies_by_category(category: str=Query(min_length=3, max_length=15)) -> List[Movie]:
     movies_find = []
     for item in movies:
-        if category.lower().strip() == item["category"].lower() and year == item["year"]:
+        if category.lower().strip() == item["category"].lower():
             movies_find.append(item)
-    return movies_find
+    return  JSONResponse(content=movies_find)
 
-@app.post('/movies',tags=["Movies"], status_code=status.HTTP_201_CREATED)
-def create_movies(movie: Movie):
+@app.post('/movies',tags=["Movies"], status_code=status.HTTP_201_CREATED, response_model=Movie)
+def create_movies(movie: Movie) -> Movie:
     movies.append(movie)
-    return movies[-1]
+    return JSONResponse(content=movies[-1])
 
-@app.put('/movies/{id}',tags=["Movies"])
-def update_movie(id: int, Movie):
+@app.put('/movies/{id}',tags=["Movies"], response_model=Movie)
+def update_movie(id: int, Movie)-> Movie:
     for item in movies:
         if item["id"] == id:
             item["title"] = Movie.title
@@ -82,7 +79,7 @@ def update_movie(id: int, Movie):
             item["year"] = Movie.year
             item["rating"] = Movie.rating
             item["category"] = Movie.category
-            return movies
+            return JSONResponse(content=item)
         
 @app.delete('/movies/{id}',tags=["Movies"], status_code=204 )
 def delete_movie(id: int):
