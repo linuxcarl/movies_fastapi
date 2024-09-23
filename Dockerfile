@@ -9,7 +9,9 @@ RUN apt-get update && apt-get install -y tzdata
 
 # Instala FastAPI y otros paquetes requeridos
 RUN pip install --no-cache-dir --upgrade pip \
-    && pip install --no-cache-dir fastapi[all]
+    && pip install --no-cache-dir fastapi[all] \
+    && pip install pyjwt \
+    && pip install python-dotenv
 
 # Copia el código de la aplicación en el contenedor
 COPY . .
