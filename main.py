@@ -1,14 +1,18 @@
 from fastapi import FastAPI, Body, status, Path, Query, HTTPException, Depends, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from pydantic import BaseModel, Field
 from typing import Optional, List
 from jwt_manager import create_token, validate_token
 from fastapi.security import HTTPBearer
+from config.database import Session, engine, Base
+from models.movie import Movie as MovieModel
+from fastapi.encoders import jsonable_encoder
 
 app = FastAPI()
 app.title="First app whit FastApi"
 app.version = "0.0.1"
 
+Base.metadata.create_all(bind=engine )
 class Movie(BaseModel):
     id: Optional[int] = None
     title: str= Field(min_length=5, max_length=30 )
@@ -61,22 +65,24 @@ class JWTBearer(HTTPBearer):
  
 @app.get('/movies',tags=["Movies"], response_model=List[Movie], dependencies=[Depends(JWTBearer())])
 def get_movies() -> List[Movie]:
-    return JSONResponse(status_code=200, content=movies)
+    db = Session()
+    result = db.query(MovieModel).all()
+    return JSONResponse(status_code=200, content=jsonable_encoder(result))
 
 @app.get('/movies/{id}',tags=["Movies"], response_model=Movie, dependencies=[Depends(JWTBearer())])
 def get_movies(id: int = Path(ge=1)) -> Movie:
-    for item in movies:
-        if id == item["id"]:
-            return JSONResponse(content=item)
-    return JSONResponse(status_code=404,content=[])
+    db = Session()
+    result = db.query(MovieModel).filter(MovieModel.id == id).first()
+    if not result:
+        return JSONResponse(status_code=404,content={"message":"Registro no encontrado"})
+    return JSONResponse(content=jsonable_encoder(result))
 
 @app.get('/movies/',tags=["Movies"],response_model=List[Movie], dependencies=[Depends(JWTBearer())])
 def get_movies_by_category(category: str=Query(min_length=3, max_length=15)) -> List[Movie]:
-    movies_find = []
-    for item in movies:
-        if category.lower().strip() == item["category"].lower():
-            movies_find.append(item)
-    return  JSONResponse(content=movies_find)
+    db = Session()
+    result = db.query(MovieModel).filter(MovieModel.category == category).all()
+    return JSONResponse(content=jsonable_encoder(result))
+
 
 @app.post('/login', tags=["Auth"])
 def login(user: User):
@@ -86,7 +92,10 @@ def login(user: User):
 
 @app.post('/movies',tags=["Movies"], status_code=status.HTTP_201_CREATED, response_model=dict, dependencies=[Depends(JWTBearer())])
 def create_movie(movie: Movie) -> dict:
-    movies.append(movie.dict())
+    db = Session()
+    newMovie= MovieModel(**movie.dict())
+    db.add(newMovie)
+    db.commit()
     return JSONResponse(status_code=201, content={"message": "Se ha registrado la película"})
 
 @app.put('/movies/{id}',tags=["Movies"], response_model=Movie, dependencies=[Depends(JWTBearer())])

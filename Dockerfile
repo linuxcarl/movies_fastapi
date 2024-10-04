@@ -11,7 +11,8 @@ RUN apt-get update && apt-get install -y tzdata
 RUN pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir fastapi[all] \
     && pip install pyjwt \
-    && pip install python-dotenv
+    && pip install python-dotenv \
+    && pip install sqlalchemy
 
 # Copia el código de la aplicación en el contenedor
 COPY . .
