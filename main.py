@@ -7,11 +7,13 @@ from fastapi.security import HTTPBearer
 from config.database import Session, engine, Base
 from models.movie import Movie as MovieModel
 from fastapi.encoders import jsonable_encoder
+from middlewares.error_handler import ErrorHandler
 
 app = FastAPI()
 app.title="First app whit FastApi"
 app.version = "0.0.1"
 
+app.add_middleware(ErrorHandler)
 Base.metadata.create_all(bind=engine )
 class Movie(BaseModel):
     id: Optional[int] = None
