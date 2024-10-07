@@ -100,17 +100,21 @@ def create_movie(movie: Movie) -> dict:
 
 @app.put('/movies/{id}',tags=["Movies"], response_model=Movie, dependencies=[Depends(JWTBearer())])
 def update_movie(id: int, movie: Movie)-> dict:
-	for item in movies:
-		if item["id"] == id:
-			item['title'] = movie.title
-			item['overview'] = movie.overview
-			item['year'] = movie.year
-			item['rating'] = movie.rating
-			item['category'] = movie.category
-			return JSONResponse(status_code=200, content={"message": "Se ha modificado la película"})
+    db = Session()
+    movieRecord = db.query(MovieModel).filter(MovieModel.id == id ).first()
+    movieRecord.title = movie.title
+    movieRecord.overview = movie.overview
+    movieRecord.year = movie.year
+    movieRecord.rating = movie.rating
+    movieRecord.category = movie.category
+    db.commit()
+    return JSONResponse(status_code=200, content={"message": "Se ha modificado la película"})
 
-@app.delete('/movies/{id}',tags=["Movies"], status_code=204 , dependencies=[Depends(JWTBearer())])
+@app.delete('/movies/{id}',tags=["Movies"],status_code=204,  dependencies=[Depends(JWTBearer())])
 def delete_movie(id: int):
-    for item in movies:
-        if id == item["id"]:
-            movies.remove(item)
+    db = Session()
+    movie = db.query(MovieModel).filter(MovieModel.id == id).first()
+    if not movie:
+        return JSONResponse(status_code=404,content={"message":"Registro no encontrado"})
+    db.delete(movie)
+    db.commit()
