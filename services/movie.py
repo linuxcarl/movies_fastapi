@@ -34,7 +34,6 @@ class MovieServices():
         return True
 
     def delete_movie(self, id):
-        movie = self.db.query(ModelMovie).filter(ModelMovie.id == id ).first()
-        self.db.delete(movie)
+        self.db.query(ModelMovie).filter(ModelMovie.id == id ).delete()
         self.db.commit()
         return True
